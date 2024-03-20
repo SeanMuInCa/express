@@ -1,22 +1,24 @@
 const express = require('express');
 const router = express();
-const albumController = require('../controllers/controller');
+const methods = require('../controllers/controllers')
 
 router.use(express.json());
 
-// GET ALL ROUTE
-router.get('/music', albumController.getAllAlbums);
 
-// GET BY ID ROUTE
-router.get('/music/:id', albumController.getAlbumById);
+//get all routes
+router.get("/music", methods.getAll);
 
-// CREATE ROUTE
-router.post('/music', albumController.createAlbum);
+//get by id route
+router.get("/music/:id", methods.getById);
 
-// UPDATE ROUTE
-router.put('/music/:id', albumController.updateAlbumById);
+//create route
+router.post("/music", methods.createNew);
 
-// DELETE ROUTE
-router.delete('/music/:id', albumController.deleteAlbumById);
+//update route
+router.put("/music/:id", methods.updateById);
+
+
+//delete route
+router.delete('/music/:id', methods.deleteById)
 
 module.exports = router;
