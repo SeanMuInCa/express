@@ -1,124 +1,82 @@
-const Album = require('../database/collection/Album')
-// methods available via mongoose model:
-// find()
-// findById()
-// findOne()
-// findOneAndDelete()
-// findByIdAndDelete()
+const Album = require('../db/collections/album');
 
+const getAllAlbums = async (req, res)=>{
+    Album.find().then((albums)=>{
+        if(!albums.length){
+            return res.status(404).json({success: false, data: "No albums found."});
+        }
+        return res.status(200).json({sucess: true, data: albums});
+    }).catch((err)=>{
+        return res.status(400).json({success: false, error: err});
+    });
+};
 
+const getAlbumById = async (req, res)=>{
+    Album.findById(req.params.id).then((albumData)=>{
+        return res.status(200).json({success: true, data: albumData});
+    }).catch((err)=>{
+        return res.status(400).json({success: false, error: err});
+    });
+};
 
-//get all data 
-const getAll = async (req, res) => {
-    console.log("someone is coming to music");
-    Album.find()
-        .then((albums) => {
-            if (!albums.length) {
-                return res
-                    .status(404)
-                    .json({ success: false, data: "No albums found." });
-            }
-            return res.status(200).json({ success: true, data: albums });
-        })
-        .catch((reason) => {
-            return res.status(400).json({ success: false, error: reason });
-        });
-}
-
-//get one by id
-const getById = async (req, res) => {
-    console.log("someone is coming to music by id");
-    Album.findById(req.params.id)
-        .then((data) => {
-            //mongodb checks the id is legal or not, if it possible legal, it will return something
-            return res.status(200).json({ success: true, data: data });
-        })
-        .catch((reason) => {
-            return res.status(400).json({ success: false, error: reason });
-        });
-}
-
-//create a new record
-const createNew = async (req, res) => {
-    console.log("someone is coming to music to post");
-    const bodyInfo = req.body;
-    if (bodyInfo.constructor === Object && Object.keys(bodyInfo).length === 0) {
-        // is a empty object
-        return res
-            .status(400)
-            .json({ success: false, error: "you must provide album information" });
+const createAlbum = async (req, res)=>{
+    console.log(req.body);
+    const body = req.body;
+    if(body.constructor === Object && Object.keys(body).length === 0) {
+        return res.status(400).json({success: false, error: "You must provide album information"});
     }
-    const newAlbum = new Album(bodyInfo);
-
-    if (!newAlbum) {
-        return res
-            .status(400)
-            .json({ success: false, error: "album creation failed" });
+    const newAlbum = new Album(body);
+    if (!newAlbum){
+        return res.status(400).json({success: false, error: "Album creation failed"});
     }
+    newAlbum.save().then(()=>{
+        return res.status(201).json({success: true, id: newAlbum._id, message: "Album created!"});
+    }).catch(err =>{
+        return res.status(400).json({success: false, error: err, message: "Album not created"});
+    });
+};
 
-    newAlbum
-        .save()
-        .then(() => {
-            return res.status(201).json({
-                success: true,
-                id: newAlbum._id,
-                message: "album created successed!"
-            }); //201 for post sucess
-        })
-        .catch((reason) => {
-            return res
-                .status(400)
-                .json({ success: false, error: reason, message: "album not created" });
-        });
-}
-
-//update one record by id
-const updateById = async (req, res) => {
-    const bodyInfo = req.body;
-    if (bodyInfo instanceof Object && Object.keys(bodyInfo).length === 0) {
-        // is a empty object
-        return res
-            .status(400)
-            .json({ success: false, error: "you must specify an album" });
+const updateAlbumById = async (req, res)=>{
+    const body = req.body;
+    if(body.constructor == Object && Object.keys(body).length === 0){
+        return res.status(400).json({success: false, error: "You must specify an album"});
     }
+    Album.findById(req.params.id).then((album)=>{
+        if(album === null){
+            return res.status(404).json({success: false, error: "Album id not found"});
+        }
+        if(body.album){
+            album.album = body.album;
+        }
+        album.artist = body.artist;
+        album.year = body.year;
+        album.artwork = body.artwork;
 
-    Album.findById(req.params.id)
-        .then((data) => {
-            if (!data)
-                return res
-                    .status(404)
-                    .json({ success: false, error: "Album id not found" });
-
-            if (bodyInfo.album) data.album = bodyInfo.album;
-            if (bodyInfo.artist) data.artist = bodyInfo.artist;
-            if (bodyInfo.year) data.year = bodyInfo.year;
-            if (bodyInfo.artwork) data.artwork = bodyInfo.artwork;
-
-            data
-                .save()
-                .then(() => {
-                    return res
-                        .status(200)
-                        .json({ success: true, id: data._id, message: "Album updated" });
-                })
-                .catch((reason) => {
-                    return res.status(400).json({ success: false, error: reason });
-                });
-        })
-        .catch((reason) => {
-            return res.status(400).json({ success: false, error: reason });
+        album.save().then(()=>{
+            return res.status(200).json({success: true, id: album._id, message: "Album updated"});
+        }).catch((err)=>{
+            return res.status(400).json({success: false, error: err});
         });
-}
+    }).catch((err)=>{
+        return res.status(400).json({success: false, error: err});
+    });
+};
 
-//delete one record by id
-const deleteById = async (req, res) => {
-    Album.findByIdAndDelete(req.params.id).then((album) => {
-        if(album === null) return res.status(404).json({success: false, error: "not found"})
-        return res.status(200).json({success:true,data: album, message:"deleted"});
-    }).catch((reason) => {
-        res.status(400).json({success: false, error: reason});
-    })
-}
-const methods = {getAll,getById,createNew,deleteById,updateById}
+const deleteAlbumById = async (req, res)=>{
+    Album.findByIdAndDelete(req.params.id).then((album)=>{
+        if(album === null){
+            return res.status(404).json({success: false, error: "album id not found"});
+        }
+        return res.status(200).json({success: true, data: album, message: "Album deleted"});
+    }).catch((err)=>{
+        return res.status(400).json({success: false, error: err});
+    });
+};
 
-module.exports = methods;
+module.exports = {
+    getAllAlbums,
+    getAlbumById,
+    createAlbum,
+    updateAlbumById,
+    deleteAlbumById
+};
